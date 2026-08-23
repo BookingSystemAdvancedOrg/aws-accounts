@@ -1,4 +1,0 @@
-bucket         = "sbs-account-management-tfstate"
-key            = "org/customers.tfstate"
-region         = "eu-north-1"
-encrypt        = true

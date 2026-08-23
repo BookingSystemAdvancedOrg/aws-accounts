@@ -3,18 +3,6 @@ name: customers
 on:
   push:
     branches: [main]
-    paths:
-      - "customers.tfvars"
-      - "*.tf"
-      - "modules/**"
-      - "account-baseline/**"
-  pull_request:
-    paths:
-      - "customers.tfvars"
-      - "*.tf"
-      - "modules/**"
-      - "account-baseline/**"
-  workflow_dispatch: {}
 
 permissions:
   id-token: write
