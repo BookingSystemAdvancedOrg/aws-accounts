@@ -1,0 +1,108 @@
+name: customers
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "customers.tfvars"
+      - "*.tf"
+      - "modules/**"
+      - "account-baseline/**"
+  pull_request:
+    paths:
+      - "customers.tfvars"
+      - "*.tf"
+      - "modules/**"
+      - "account-baseline/**"
+  workflow_dispatch: {}
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+env:
+  TF_VERSION: "1.9.5"
+  AWS_REGION: "eu-north-1"
+
+jobs:
+  # Stage 1: management-account only. Creates/updates OUs, dev+prod accounts,
+  # and every IAM Identity Center object. Emits the account matrix consumed
+  # by stage 2.
+  organizations:
+    name: organizations (plan/apply)
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Configure AWS credentials (management account)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: "arn:aws:iam::388343452097:role/account-manager-oidc-role"
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: terraform init
+        run: |
+          terraform init \
+            -backend-config="bucket=" \
+            -backend-config="key=org/customers.tfstate" \
+            -backend-config="region=${{ env.AWS_REGION }}" \
+
+      - name: terraform plan
+        run: terraform plan -var-file=customers.tfvars -out=tfplan
+
+      - name: terraform apply
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        run: terraform apply -auto-approve tfplan
+
+      - name: Emit account matrix
+        id: matrix
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        run: |
+          echo "matrix=$(terraform output -json account_matrix | jq -c '{include: .}')" >> "$GITHUB_OUTPUT"
+
+  # Stage 2: one apply PER ACCOUNT, each with its own state file, assuming
+  # OrganizationAccountAccessRole from the management account into that one
+  # account. Creates the GitHub OIDC provider + AdministratorAccess role.
+  account-baseline:
+    name: account-baseline
+    needs: organizations
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.organizations.outputs.matrix) }}
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Configure AWS credentials (management account)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: "arn:aws:iam::388343452097:role/account-manager-oidc-role"
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: terraform init
+        working-directory: account-baseline
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
+            -backend-config="key=customers/${{ matrix.customer }}/${{ matrix.env }}/account-baseline.tfstate" \
+            -backend-config="region=${{ env.AWS_REGION }}" \
+
+      - name: terraform apply
+        working-directory: account-baseline
+        run: |
+          terraform apply -auto-approve \
+            -var="target_account_id=${{ matrix.account_id }}" \
+            -var="customer=${{ matrix.customer }}" \
+            -var="env=${{ matrix.env }}"
