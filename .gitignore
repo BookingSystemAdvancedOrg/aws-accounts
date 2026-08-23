@@ -13,8 +13,11 @@ crash.*.log
 # password, private keys, and other secrets. These should not be part of version
 # control as they are data points which are potentially sensitive and subject
 # to change depending on the environment.
-*.tfvars
 *.tfvars.json
+
+# ...except customers.tfvars: it's this repo's day-to-day config file (see
+# README "Adding a customer"), not a secrets file, and CI needs it committed.
+!customers.tfvars
 
 # Ignore override files as they are usually used to override resources locally and so
 # are not checked in
