@@ -50,7 +50,7 @@ jobs:
       - name: terraform init
         run: |
           terraform init \
-            -backend-config="bucket=" \
+            -backend-config="bucket=388343452097-tfstate-bucket" \
             -backend-config="key=org/customers.tfstate" \
             -backend-config="region=${{ env.AWS_REGION }}" \
 
@@ -95,7 +95,7 @@ jobs:
         working-directory: account-baseline
         run: |
           terraform init \
-            -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
+            -backend-config="bucket=bucket=388343452097-tfstate-bucket" \
             -backend-config="key=customers/${{ matrix.customer }}/${{ matrix.env }}/account-baseline.tfstate" \
             -backend-config="region=${{ env.AWS_REGION }}" \
 
