@@ -9,7 +9,7 @@ customers = [
 #   a-<name>  -> added to <customer>-admin group      -> AdministratorAccess in dev+prod
 #   d-<name>  -> added to <customer>-developer group   -> PowerUserAccess in dev+prod
 customer_users = {
-  acme = [
+  test = [
     "a-lamo",
     "d-zach",
   ]
