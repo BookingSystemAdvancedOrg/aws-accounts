@@ -5,7 +5,9 @@ locals {
   identity_store_id = tolist(data.aws_ssoadmin_instances.this.identity_store_ids)[0]
 
   # Flatten { customer => [usernames] } into per-role, per-user maps keyed by
-  # "customer/username" so each resource has a stable for_each key.
+  # "customer/username" -- one entry per (customer, username) pair, used to
+  # drive per-customer group MEMBERSHIP (a username can appear in more than
+  # one customer's list, each producing its own membership entry here).
   admin_users = {
     for pair in flatten([
       for customer, users in var.customer_users : [
@@ -23,6 +25,20 @@ locals {
   }
 
   all_users = merge(local.admin_users, local.developer_users)
+
+  # A username can appear under more than one customer (e.g. one admin with
+  # access to several). Identity Center usernames/emails are unique per
+  # identity store, so the user resource must be created ONCE per username,
+  # not once per (customer, username) pair -- group membership below stays
+  # per-customer, so the same user can belong to multiple customers' groups.
+  unique_usernames = distinct([for pair in local.all_users : pair.username])
+
+  # Which customers each username appears under -- display purposes only.
+  customers_by_username = {
+    for username in local.unique_usernames : username => sort(distinct([
+      for pair in local.all_users : pair.customer if pair.username == username
+    ]))
+  }
 
   # customer x env x role -> account assignment
   account_assignments = merge(
@@ -102,19 +118,19 @@ resource "aws_identitystore_group" "developer" {
 # --- Users ---
 
 resource "aws_identitystore_user" "this" {
-  for_each          = local.all_users
+  for_each          = toset(local.unique_usernames)
   identity_store_id = local.identity_store_id
 
-  user_name    = each.value.username
-  display_name = each.value.username
+  user_name    = each.value
+  display_name = each.value
 
   name {
-    given_name  = title(replace(substr(each.value.username, 2, -1), "-", " "))
-    family_name = title(each.value.customer)
+    given_name  = title(replace(substr(each.value, 2, -1), "-", " "))
+    family_name = title(join("/", local.customers_by_username[each.value]))
   }
 
   emails {
-    value   = "${each.value.username}@${var.user_email_domain}"
+    value   = "${each.value}@${var.user_email_domain}"
     primary = true
   }
 }
@@ -126,7 +142,7 @@ resource "aws_identitystore_group_membership" "admin" {
   identity_store_id = local.identity_store_id
 
   group_id  = aws_identitystore_group.admin[each.value.customer].group_id
-  member_id = aws_identitystore_user.this[each.key].user_id
+  member_id = aws_identitystore_user.this[each.value.username].user_id
 }
 
 resource "aws_identitystore_group_membership" "developer" {
@@ -134,7 +150,7 @@ resource "aws_identitystore_group_membership" "developer" {
   identity_store_id = local.identity_store_id
 
   group_id  = aws_identitystore_group.developer[each.value.customer].group_id
-  member_id = aws_identitystore_user.this[each.key].user_id
+  member_id = aws_identitystore_user.this[each.value.username].user_id
 }
 
 # --- Account assignments (SSO access to dev + prod for each group) ---
