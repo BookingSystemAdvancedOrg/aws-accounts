@@ -31,8 +31,15 @@ resource "aws_organizations_account" "dev" {
   # Deleting an AWS account via Terraform is (mostly) irreversible. Require a
   # deliberate `terraform state rm` / manual override rather than an
   # accidental `terraform destroy` or a customer dropped from the list.
+  #
+  # role_name / iam_user_access_to_billing are write-only at account
+  # creation -- AWS never returns them afterward, so a `terraform import`
+  # can't populate them in state. Left untracked, that mismatch shows as
+  # "forces replacement" on every plan against an imported account, even
+  # though the real values already match. Ignore them post-creation.
   lifecycle {
     prevent_destroy = true
+    ignore_changes  = [role_name, iam_user_access_to_billing]
   }
 }
 
@@ -55,5 +62,6 @@ resource "aws_organizations_account" "prod" {
 
   lifecycle {
     prevent_destroy = true
+    ignore_changes  = [role_name, iam_user_access_to_billing]
   }
 }

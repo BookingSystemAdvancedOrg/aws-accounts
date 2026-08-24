@@ -9,14 +9,16 @@ terraform {
   }
 
   # State for the org/identity-center stage lives in the management account.
-  # Fill in the bucket/table (e.g. from the shared-account state resources)
-  # and initialize with:
-  #   terraform init -backend-config=backend.hcl
+  # Hardcoded (no per-environment variation, no secrets in a bucket name) --
+  # `terraform init` needs no flags at all for this root module.
+  # Locking is native S3 conditional-write locking (use_lockfile, Terraform
+  # >=1.11) -- no DynamoDB table.
   backend "s3" {
-    # bucket         = "sbs-terraform-state"
-    # key            = "org/customers.tfstate"
-    # region         = "eu-north-1"
-    # encrypt        = true
+    bucket       = "388343452097-tfstate-bucket"
+    key          = "org/customers.tfstate"
+    region       = "eu-north-1"
+    encrypt      = true
+    use_lockfile = true
   }
 }
 

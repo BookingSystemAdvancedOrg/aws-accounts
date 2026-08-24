@@ -12,13 +12,17 @@ terraform {
     }
   }
 
-  # One state file PER ACCOUNT: initialize with a distinct key, e.g.
-  #   terraform init -backend-config=key=customers/${customer}/${env}/account-baseline.tfstate
+  # One state file PER ACCOUNT -- bucket/region/locking are fixed, but `key`
+  # can't be hardcoded here (backend blocks don't allow interpolation, and
+  # this varies per customer/env). Initialize with:
+  #   terraform init -backend-config="key=customers/<customer>/<env>/account-baseline.tfstate"
+  # Locking is native S3 conditional-write locking (use_lockfile, Terraform
+  # >=1.11) -- no DynamoDB table.
   backend "s3" {
-    # bucket         = "sbs-terraform-state"
-    # region         = "eu-north-1"
-    # dynamodb_table = "sbs-terraform-locks"
-    # encrypt        = true
+    bucket       = "388343452097-tfstate-bucket"
+    region       = "eu-north-1"
+    encrypt      = true
+    use_lockfile = true
   }
 }
 
