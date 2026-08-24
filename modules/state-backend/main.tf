@@ -67,6 +67,12 @@ resource "aws_s3_bucket_lifecycle_configuration" "tfstate" {
     id     = "expire-noncurrent-versions"
     status = "Enabled"
 
+    # Provider now requires exactly one of filter/prefix even to mean "apply
+    # to the whole bucket" -- an empty filter is how you say that. Omitting
+    # it works today but is a deprecation warning that becomes a hard error
+    # in a future provider version.
+    filter {}
+
     noncurrent_version_expiration {
       noncurrent_days = var.noncurrent_version_expiration_days
     }
