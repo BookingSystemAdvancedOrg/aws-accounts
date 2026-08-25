@@ -22,6 +22,17 @@ variable "user_email_domain" {
   default     = "ithjalparna.se"
 }
 
+variable "aws_admin_email" {
+  description = <<-EOT
+    Toggle for the hardcoded aws_admin break-glass user, not an email override.
+    Leave as "" (the default) to deploy aws_admin with the fixed address
+    aws@<user_email_domain>, added to every customer's admin group. Set to
+    any non-empty value to skip creating it entirely.
+  EOT
+  type        = string
+  default     = ""
+}
+
 variable "customers" {
   description = "List of customer identifiers. Each entry gets an OU under workloads/, plus a dev and a prod account."
   type        = list(string)

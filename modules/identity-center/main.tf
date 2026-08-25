@@ -153,15 +153,24 @@ resource "aws_identitystore_group_membership" "developer" {
   member_id = aws_identitystore_user.this[each.value.username].user_id
 }
 
-# --- Permanent break-glass admin user ---
+# --- Permanent break-glass admin user (toggled) ---
 #
-# Fixed identity, independent of customer_users. Always exists and is always
-# a member of every customer's admin group -- unconditional, not something
-# customers.tfvars can omit or remove. Uses the real aws@<domain> mailbox
-# directly (no plus-addressing), since this is one hardcoded identity, not
-# a per-username pattern.
+# Fixed identity, independent of customer_users -- when deployed, it's
+# always a member of every customer's admin group, not something
+# customers.tfvars can omit or remove per-customer. Uses the real
+# aws@<domain> mailbox directly (no plus-addressing), since this is one
+# fixed identity, not a per-username pattern.
+#
+# var.aws_admin_email == "" (the default) deploys it. Any non-empty value
+# skips creating it entirely -- this is a toggle, not an email override;
+# the address is always the literal aws@<user_email_domain>.
+
+locals {
+  deploy_aws_admin = var.aws_admin_email == ""
+}
 
 resource "aws_identitystore_user" "aws_admin" {
+  for_each          = local.deploy_aws_admin ? toset(["aws_admin"]) : toset([])
   identity_store_id = local.identity_store_id
 
   user_name    = "aws_admin"
@@ -179,11 +188,11 @@ resource "aws_identitystore_user" "aws_admin" {
 }
 
 resource "aws_identitystore_group_membership" "aws_admin" {
-  for_each          = toset(var.customers)
+  for_each          = local.deploy_aws_admin ? toset(var.customers) : toset([])
   identity_store_id = local.identity_store_id
 
   group_id  = aws_identitystore_group.admin[each.value].group_id
-  member_id = aws_identitystore_user.aws_admin.user_id
+  member_id = aws_identitystore_user.aws_admin["aws_admin"].user_id
 }
 
 # --- Account assignments (SSO access to dev + prod for each group) ---
