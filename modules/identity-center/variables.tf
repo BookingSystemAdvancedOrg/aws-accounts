@@ -17,19 +17,8 @@ variable "customer_accounts" {
 }
 
 variable "user_email_domain" {
-  description = "Domain used to build each Identity Center user's email: aws+<username>@<domain>. Exception: the hardcoded aws_admin user uses the bare aws@<domain> mailbox directly."
+  description = "Domain used to build each Identity Center user's email: aws+<username>@<domain>."
   type        = string
-}
-
-variable "aws_admin_email" {
-  description = <<-EOT
-    Toggle for the hardcoded aws_admin break-glass user, not an email override.
-    Leave as "" (the default) to deploy aws_admin with the fixed address
-    aws@<user_email_domain>, added to every customer's admin group. Set to
-    any non-empty value to skip creating it entirely.
-  EOT
-  type        = string
-  default     = ""
 }
 
 variable "admin_permission_set_name" {

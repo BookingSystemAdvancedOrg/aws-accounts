@@ -12,7 +12,6 @@ module "identity_center" {
   customers        = var.customers
   customer_users   = var.customer_users
   user_email_domain = var.user_email_domain
-  aws_admin_email  = var.aws_admin_email
 
   # customer -> { dev_account_id, prod_account_id }
   customer_accounts = module.organizations.customer_accounts
