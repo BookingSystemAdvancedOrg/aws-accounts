@@ -14,6 +14,5 @@ customer_users = {
   test = [
     "a-lamo",
     "d-zach",
-    "",
   ]
 }
