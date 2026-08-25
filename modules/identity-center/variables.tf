@@ -17,7 +17,7 @@ variable "customer_accounts" {
 }
 
 variable "user_email_domain" {
-  description = "Domain used to build each Identity Center user's email: <username>+aws@<domain>."
+  description = "Domain used to build each Identity Center user's email: aws+<username>@<domain>."
   type        = string
 }
 
