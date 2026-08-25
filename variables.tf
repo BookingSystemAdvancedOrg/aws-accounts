@@ -17,7 +17,7 @@ variable "billing_email_domain" {
 }
 
 variable "user_email_domain" {
-  description = "Domain used to build the email address for each generated Identity Center user: <username>@<domain>."
+  description = "Domain used to build the email address for each generated Identity Center user: <username>+aws@<domain>. Plus-addressed against a single real mailbox (aws@<domain>), same convention as billing_email_domain."
   type        = string
   default     = "ithjalparna.se"
 }

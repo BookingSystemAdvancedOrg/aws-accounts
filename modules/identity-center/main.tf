@@ -130,7 +130,7 @@ resource "aws_identitystore_user" "this" {
   }
 
   emails {
-    value   = "${each.value}@${var.user_email_domain}"
+    value   = "${each.value}+aws@${var.user_email_domain}"
     primary = true
   }
 }
