@@ -17,7 +17,7 @@ variable "billing_email_domain" {
 }
 
 variable "user_email_domain" {
-  description = "Domain used to build the email address for each generated Identity Center user: <username>+aws@<domain>. Plus-addressed against a single real mailbox (aws@<domain>), same convention as billing_email_domain."
+  description = "Domain used to build the email address for each generated Identity Center user: aws+<username>@<domain>. The hardcoded aws_admin user is the exception -- it uses the bare aws@<domain> mailbox directly, no plus-addressing."
   type        = string
   default     = "ithjalparna.se"
 }

@@ -3,7 +3,6 @@
 #   - 2 accounts: <customer>-dev and <customer>-prod
 customers = [
   "test",
-  "test-2"
 ]
 
 # Per-customer Identity Center usernames.
@@ -13,10 +12,6 @@ customers = [
 # still one Identity Center identity, just added to each customer's groups.
 customer_users = {
   test = [
-    "a-lamo",
-    "d-zach",
-  ]
-  test-2 = [
     "a-lamo",
     "d-zach",
   ]
