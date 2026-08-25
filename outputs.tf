@@ -42,3 +42,8 @@ output "provisioning_topic_arn" {
   description = "SNS topic ARN the CI 'notify user provisioning' step publishes to."
   value       = aws_sns_topic.user_provisioning.arn
 }
+
+output "access_portal_url" {
+  description = "AWS access portal sign-in URL, included in the CI 'notify user provisioning' SNS message."
+  value       = var.access_portal_url
+}
