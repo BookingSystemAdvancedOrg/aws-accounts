@@ -130,7 +130,7 @@ resource "aws_identitystore_user" "this" {
   }
 
   emails {
-    value   = "aws+${each.value}@${var.user_email_domain}"
+    value   = "${each.value}+aws@${var.user_email_domain}"
     primary = true
   }
 }
@@ -151,6 +151,39 @@ resource "aws_identitystore_group_membership" "developer" {
 
   group_id  = aws_identitystore_group.developer[each.value.customer].group_id
   member_id = aws_identitystore_user.this[each.value.username].user_id
+}
+
+# --- Permanent break-glass admin user ---
+#
+# Fixed identity, independent of customer_users. Always exists and is always
+# a member of every customer's admin group -- unconditional, not something
+# customers.tfvars can omit or remove. Uses the real aws@<domain> mailbox
+# directly (no plus-addressing), since this is one hardcoded identity, not
+# a per-username pattern.
+
+resource "aws_identitystore_user" "aws_admin" {
+  identity_store_id = local.identity_store_id
+
+  user_name    = "aws_admin"
+  display_name = "aws_admin"
+
+  name {
+    given_name  = "AWS"
+    family_name = "Admin"
+  }
+
+  emails {
+    value   = "aws@${var.user_email_domain}"
+    primary = true
+  }
+}
+
+resource "aws_identitystore_group_membership" "aws_admin" {
+  for_each          = toset(var.customers)
+  identity_store_id = local.identity_store_id
+
+  group_id  = aws_identitystore_group.admin[each.value].group_id
+  member_id = aws_identitystore_user.aws_admin.user_id
 }
 
 # --- Account assignments (SSO access to dev + prod for each group) ---
