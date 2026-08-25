@@ -57,18 +57,6 @@ variable "customer_users" {
   }
 }
 
-variable "access_portal_url" {
-  description = "AWS access portal (token vending machine) sign-in URL, included in the user-provisioning SNS notification. Defaults to the standard AWS-generated pattern (https://<identity-store-id>.awsapps.com/start) -- VERIFY against the actual URL in your browser's address bar and override here if IAM Identity Center Settings has a custom portal subdomain configured instead."
-  type        = string
-  default     = "https://d-c3676ded63.awsapps.com/start"
-}
-
-variable "notification_email" {
-  description = "Email address subscribed to the user-provisioning SNS topic. CI publishes here after every apply with the current list of provisioned Identity Center users and their sign-in emails -- AWS has no native invite/notification email for Identity Center users created via the API. Must confirm the SNS subscription once (a link sent to this address) before notifications start delivering."
-  type        = string
-  default     = "aws@ithjalparna.se"
-}
-
 variable "github_org" {
   description = "GitHub organization allowed to assume the per-account OIDC deploy role."
   type        = string
