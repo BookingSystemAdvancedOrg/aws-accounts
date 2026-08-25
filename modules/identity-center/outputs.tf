@@ -15,3 +15,10 @@ output "administrator_permission_set_arn" {
 output "developer_permission_set_arn" {
   value = aws_ssoadmin_permission_set.developer.arn
 }
+
+output "provisioned_users" {
+  description = "username -> sign-in email for every Identity Center user this module manages. Consumed by the CI step that notifies notification_email after every apply."
+  value = {
+    for username in local.unique_usernames : username => "${username}+aws@${var.user_email_domain}"
+  }
+}

@@ -57,6 +57,12 @@ variable "customer_users" {
   }
 }
 
+variable "notification_email" {
+  description = "Email address subscribed to the user-provisioning SNS topic. CI publishes here after every apply with the current list of provisioned Identity Center users and their sign-in emails -- AWS has no native invite/notification email for Identity Center users created via the API. Must confirm the SNS subscription once (a link sent to this address) before notifications start delivering."
+  type        = string
+  default     = "aws@ithjalparna.se"
+}
+
 variable "github_org" {
   description = "GitHub organization allowed to assume the per-account OIDC deploy role."
   type        = string

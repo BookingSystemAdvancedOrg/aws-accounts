@@ -32,3 +32,13 @@ output "identity_center_groups" {
   description = "Map of customer -> { admin_group_id, developer_group_id }."
   value       = module.identity_center.customer_groups
 }
+
+output "provisioned_users" {
+  description = "username -> sign-in email for every provisioned Identity Center user. Read by the CI 'notify user provisioning' step after every apply."
+  value       = module.identity_center.provisioned_users
+}
+
+output "provisioning_topic_arn" {
+  description = "SNS topic ARN the CI 'notify user provisioning' step publishes to."
+  value       = aws_sns_topic.user_provisioning.arn
+}
