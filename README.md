@@ -8,18 +8,18 @@ Adding a customer to `customers.tfvars` produces:
 - 2 member accounts in that OU: `<customer>-dev`, `<customer>-prod`
 - 1 IAM Identity Center group per role per customer: `<customer>-admin`,
   `<customer>-developer`, each assigned (via AWS-managed permission sets)
-  `AdministratorAccess` / `PowerUserAccess` in **both** the dev and prod
+  `AdministratorAccess` / `PowerUserAccess` in **both** the dev and production
   accounts
 - 1 Identity Center user per entry in `customer_users`, added to the
   matching group by username prefix (`a-` -> admin, `d-` -> developer)
 - 1 GitHub OIDC provider + `AdministratorAccess` IAM role
-  (`github-actions-deploy`) in **each** of the dev/prod accounts, trusting
+  (`github-actions-deploy`) in **each** of the dev/production accounts, trusting
   `repo:BookingSystemAdvancedOrg/*:*` -- i.e. any repo in that GitHub org can
-  assume the role in any customer's dev/prod account, but no other org can
+  assume the role in any customer's dev/production account, but no other org can
 
 ## Why two Terraform roots
 
-`organizations` + `identity-center` are management-account-only resources —
+`organizations` + `identity-center` are management-account-only resources -
 Organizations and IAM Identity Center are always managed from the account
 where they're enabled, regardless of which account they target. They live in
 the repo root and share one state file.
@@ -55,7 +55,7 @@ account-baseline/                                # per-account root that calls m
    locking (`use_lockfile = true`, requires Terraform >=1.11 -- this repo
    pins `TF_VERSION` well above that in `cicd.yml`); no DynamoDB table.
 2. Create a GitHub OIDC provider + deploy role **in the management account**
-   by hand (bootstrap chicken-and-egg — this repo's own pipeline can't
+   by hand (bootstrap chicken-and-egg - this repo's own pipeline can't
    provision its own credentials). Set its ARN as the `MANAGEMENT_DEPLOY_ROLE_ARN`
    repo variable. Scope its trust policy to `repo:BookingSystemAdvancedOrg/aws-accounts:*`.
 3. Local plans: `terraform init` at the repo root needs no flags (backend is
@@ -67,22 +67,22 @@ account-baseline/                                # per-account root that calls m
 
 1. Add the customer name to `customers` in `customers.tfvars`.
 2. Add its users to `customer_users` (usernames prefixed `a-` or `d-`).
-3. Open a PR — CI plans the org/identity-center stage. Merge to `main` to
+3. Open a PR - CI plans the org/identity-center stage. Merge to `main` to
    apply it and fan out `account-baseline` into the two new accounts.
 
 ## Notes / things to revisit as this scales
 
-- The GitHub deploy role gets `AdministratorAccess`, per the requirement —
+- The GitHub deploy role gets `AdministratorAccess`, per the requirement -
   it's the broadest possible grant to a CI role. Worth narrowing to a
   deploy-scoped policy once each customer's actual IaC footprint is known.
 - The deploy role's trust is org-wide (`repo:BookingSystemAdvancedOrg/*:*`),
   not scoped to one repo per customer, per the requirement. This means any
   repo in the org can deploy with `AdministratorAccess` into every
-  customer's dev and prod accounts -- a compromised or careless workflow in
+  customer's dev and production accounts -- a compromised or careless workflow in
   one repo can reach every other customer's account. `allowed_ref` (module
   variable, defaults to `*`) is available to narrow this by branch/tag later
   without restructuring, if that tradeoff needs revisiting.
-- `aws_organizations_account` has `prevent_destroy = true` — removing a
+- `aws_organizations_account` has `prevent_destroy = true` - removing a
   customer from `customers.tfvars` will NOT delete its accounts; that has to
   be a deliberate, separate action (AWS account deletion is effectively
   irreversible).
