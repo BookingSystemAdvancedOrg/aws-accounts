@@ -14,8 +14,14 @@ Adding a customer to `customers.tfvars` produces:
   matching group by username prefix (`a-` -> admin, `d-` -> developer)
 - 1 GitHub OIDC provider + `AdministratorAccess` IAM role
   (`github-actions-deploy`) in **each** of the dev/production accounts, trusting
-  `repo:BookingSystemAdvancedOrg/*:*` -- i.e. any repo in that GitHub org can
-  assume the role in any customer's dev/production account, but no other org can
+  only one repo (`deploy_repo`, default `infrastructure`):
+  `repo:BookingSystemAdvancedOrg@307760488/<repo>@*:*`. Every other repo in the
+  org, including the customer `site-*` repos, is refused
+- In Booqy's own accounts (customer `test`), the platform deploy roles
+  `dev-infra-oidc-role` / `prod-infra-oidc-role` (`account-baseline/platform-roles.tf`),
+  imported as they were and locked to the `infrastructure` repo. They live here
+  because the infrastructure pipeline signs in with them and must not manage
+  its own trust
 
 ## Why two Terraform roots
 
@@ -57,7 +63,9 @@ account-baseline/                                # per-account root that calls m
 2. Create a GitHub OIDC provider + deploy role **in the management account**
    by hand (bootstrap chicken-and-egg - this repo's own pipeline can't
    provision its own credentials). Set its ARN as the `MANAGEMENT_DEPLOY_ROLE_ARN`
-   repo variable. Scope its trust policy to `repo:BookingSystemAdvancedOrg/aws-accounts:*`.
+   repo variable. Scope its trust policy to this repo only:
+   `repo:BookingSystemAdvancedOrg@307760488/aws-accounts@*:*` (never `.../*`: the
+   org also holds customer `site-*` repos, and this role controls the whole org).
 3. Local plans: `terraform init` at the repo root needs no flags (backend is
    fully hardcoded). In `account-baseline/`, `key` still can't be hardcoded
    (it varies per customer/env), so run:
@@ -75,13 +83,13 @@ account-baseline/                                # per-account root that calls m
 - The GitHub deploy role gets `AdministratorAccess`, per the requirement -
   it's the broadest possible grant to a CI role. Worth narrowing to a
   deploy-scoped policy once each customer's actual IaC footprint is known.
-- The deploy role's trust is org-wide (`repo:BookingSystemAdvancedOrg/*:*`),
-  not scoped to one repo per customer, per the requirement. This means any
-  repo in the org can deploy with `AdministratorAccess` into every
-  customer's dev and production accounts -- a compromised or careless workflow in
-  one repo can reach every other customer's account. `allowed_ref` (module
-  variable, defaults to `*`) is available to narrow this by branch/tag later
-  without restructuring, if that tradeoff needs revisiting.
+- Deploy role trust is one repo, never the whole org: the org holds customer
+  `site-*` repos that outside developers may push to, and an org-wide trust
+  would hand them `AdministratorAccess`. The org issues ID-style subjects
+  (`repo:<org>@<org id>/<repo>@<repo id>:...`); a repo switched back to the
+  old `repo:<org>/<repo>` format matches nothing, so it fails closed.
+  `allowed_ref` (module variable, defaults to `*`) can narrow it further by
+  branch or tag.
 - `aws_organizations_account` has `prevent_destroy = true` - removing a
   customer from `customers.tfvars` will NOT delete its accounts; that has to
   be a deliberate, separate action (AWS account deletion is effectively

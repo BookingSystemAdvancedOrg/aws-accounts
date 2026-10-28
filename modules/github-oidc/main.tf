@@ -35,7 +35,8 @@ data "aws_iam_policy_document" "trust" {
     condition {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_org}/*:${var.allowed_ref == "*" ? "*" : "ref:${var.allowed_ref}"}"]
+      # The org issues ID-style subjects: repo:<org>@<org id>/<repo>@<repo id>:...
+      values = ["repo:${var.github_org}@${var.github_org_id}/${var.github_repo}@*:${var.allowed_ref == "*" ? "*" : "ref:${var.allowed_ref}"}"]
     }
   }
 }
@@ -43,7 +44,7 @@ data "aws_iam_policy_document" "trust" {
 resource "aws_iam_role" "github_actions" {
   name               = var.role_name
   assume_role_policy = data.aws_iam_policy_document.trust.json
-  description        = "Assumed by GitHub Actions in any ${var.github_org} repo via OIDC. AdministratorAccess so CI can provision anything the app needs."
+  description        = "Assumed by GitHub Actions in ${var.github_org}/${var.github_repo} via OIDC. AdministratorAccess so CI can provision anything the app needs."
 
   max_session_duration = 3600
 }

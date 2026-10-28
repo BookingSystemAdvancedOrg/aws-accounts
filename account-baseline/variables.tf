@@ -27,3 +27,15 @@ variable "github_org" {
   type    = string
   default = "BookingSystemAdvancedOrg"
 }
+
+variable "github_org_id" {
+  description = "Numeric ID of github_org (part of every OIDC subject the org issues)."
+  type        = string
+  default     = "307760488"
+}
+
+variable "deploy_repo" {
+  description = "The repo whose workflows may assume github-actions-deploy in this account."
+  type        = string
+  default     = "infrastructure"
+}

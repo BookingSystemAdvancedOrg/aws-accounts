@@ -3,6 +3,8 @@ name: customers
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
 
 permissions:
   id-token: write
@@ -15,7 +17,7 @@ env:
 jobs:
   # Stage 1: management-account only. Creates/updates OUs, dev+prod accounts,
   # and every IAM Identity Center object. Emits the account matrix consumed
-  # by stage 2.
+  # by stage 2. On a pull request it only plans.
   organizations:
     name: organizations (plan/apply)
     runs-on: ubuntu-latest
@@ -44,19 +46,19 @@ jobs:
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         run: terraform apply -auto-approve tfplan
 
+      # Reads the accounts from state, so a pull request gets the matrix too.
       - name: Emit account matrix
         id: matrix
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         run: |
           echo "matrix=$(terraform output -json account_matrix | jq -c '{include: .}')" >> "$GITHUB_OUTPUT"
 
-  # Stage 2: one apply PER ACCOUNT, each with its own state file, assuming
+  # Stage 2: one run PER ACCOUNT, each with its own state file, assuming
   # OrganizationAccountAccessRole from the management account into that one
-  # account. Creates the GitHub OIDC provider + AdministratorAccess role.
+  # account. Creates the GitHub OIDC provider + deploy roles. Plans on a pull
+  # request; applies the reviewed plan on main.
   account-baseline:
     name: account-baseline
     needs: organizations
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     strategy:
       matrix: ${{ fromJson(needs.organizations.outputs.matrix) }}
@@ -80,10 +82,15 @@ jobs:
           terraform init \
             -backend-config="key=customers/${{ matrix.customer }}/${{ matrix.env }}/account-baseline.tfstate"
 
-      - name: terraform apply
+      - name: terraform plan
         working-directory: account-baseline
         run: |
-          terraform apply -auto-approve \
+          terraform plan -out=tfplan \
             -var="target_account_id=${{ matrix.account_id }}" \
             -var="customer=${{ matrix.customer }}" \
             -var="env=${{ matrix.env }}"
+
+      - name: terraform apply
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        working-directory: account-baseline
+        run: terraform apply -auto-approve tfplan

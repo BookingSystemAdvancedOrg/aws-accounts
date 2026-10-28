@@ -1,8 +1,10 @@
 module "github_oidc" {
   source = "../modules/github-oidc"
 
-  github_org = var.github_org
-  role_name  = "github-actions-deploy"
+  github_org    = var.github_org
+  github_org_id = var.github_org_id
+  github_repo   = var.deploy_repo
+  role_name     = "github-actions-deploy"
 }
 
 module "state_backend" {
