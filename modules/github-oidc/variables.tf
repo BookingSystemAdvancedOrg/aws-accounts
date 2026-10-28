@@ -1,5 +1,15 @@
 variable "github_org" {
-  description = "GitHub organization allowed to assume this role. Every repo in this org can assume it -- no other org can, since the sub claim is namespaced by org."
+  description = "GitHub organization that owns github_repo."
+  type        = string
+}
+
+variable "github_org_id" {
+  description = "Numeric ID of github_org. Pinning it means a renamed or re-registered org of the same name can't match."
+  type        = string
+}
+
+variable "github_repo" {
+  description = "The one repo in github_org whose workflows may assume this role. Any other repo, including customer site-* repos, is refused."
   type        = string
 }
 

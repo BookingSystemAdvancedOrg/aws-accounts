@@ -9,3 +9,8 @@ output "tfstate_bucket_name" {
 output "tfstate_bucket_arn" {
   value = module.state_backend.bucket_arn
 }
+
+output "platform_role_arn" {
+  description = "The Booqy infra deploy role in this account, or null outside Booqy's accounts."
+  value       = one([for r in aws_iam_role.platform : r.arn])
+}
